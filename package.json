@@ -1,0 +1,15 @@
+{
+  "name": "amazon-bot",
+  "version": "0.1.0",
+  "description": "Some slash commands",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.4.5",
+    "claudia-bot-builder": "^1.3.1"
+  }
+}
