@@ -83,7 +83,7 @@ const responder = request => {
   case 'help':
     return helpMessage()
   case 'deploy':
-    return deployPromos()
+    return deployPromos().then(() => invalidateCache('production'))
   case 'invalidate':
     return invalidateCache(args[1])
   default:
