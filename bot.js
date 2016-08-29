@@ -14,6 +14,23 @@ Commands:
     Note: Invalidation can take a little time
 `).get()
 
+
+const invalidateRequest = (cdnEnvironment) => {
+  const distributionId = cdnEnvironment === 'staging' ? 'E233P4CE1268H7' : 'ENFF23C7D8VH0'
+
+  return cloudfront.createInvalidation({
+    DistributionId: distributionId,
+    InvalidationBatch: {
+      CallerReference: `BotInvalidation${new Date().toJSON()}`,
+      Paths: {
+        Quantity: 1,
+        Items: [ '/*.json' ]
+      }
+    }
+  }).promise()
+}
+
+
 const deployPromos = () => {
   const listResponse = s3.listObjects({ Bucket: 'ello-staging-promos' })
 
@@ -31,14 +48,14 @@ const deployPromos = () => {
 
         return request.promise()
       })
+      const invalidateOperations = [ invalidateRequest('production') ]
 
-      return Promise.all(copyOperations)
+      return Promise.all(copyOperations.concat(invalidateOperations))
         .then(copyResponses => {
 
           const message = new SlackTemplate('Thanks!')
                 .addAttachment('A1')
-                .addText('Promos deployed to production')
-
+                .addText('Promos deployed to production. Invalidation is running and may take a few minutes to complete.')
           return message.get()
 
         }).catch(error => error)
@@ -48,25 +65,15 @@ const deployPromos = () => {
     })
 }
 
+
 const invalidateCache = cdnEnvironment => {
   if (cdnEnvironment !== 'staging' && cdnEnvironment !== 'production') {
     return new SlackTemplate(`${cdnEnvironment} is not a valid environment`).get()
   }
 
-  const distributionId = cdnEnvironment === 'staging' ? 'E233P4CE1268H7' : 'ENFF23C7D8VH0'
+  const request = invalidateRequest(cdnEnvironment)
 
-  var invalidateRequest = cloudfront.createInvalidation({
-    DistributionId: distributionId,
-    InvalidationBatch: {
-      CallerReference: `BotInvalidation${new Date().toJSON()}`,
-      Paths: {
-        Quantity: 1,
-        Items: [ '/*.json' ]
-      }
-    }
-  }).promise()
-
-  return invalidateRequest.then(() => {
+  return request.then(() => {
     return new SlackTemplate(`Invalidating ${cdnEnvironment} promos. This may take a little while`).get()
   }).catch(err => {
     return new SlackTemplate(`Error! ${err}`).get()
